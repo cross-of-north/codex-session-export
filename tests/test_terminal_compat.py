@@ -23,6 +23,16 @@ class TerminalCompatibilityTests(unittest.TestCase):
     def types(parser):
         return [item["type"] for item in parser.data]
 
+    def test_export_filename_prefix_uses_session_metadata_timestamp(self):
+        prefix = codex_md.session_start_filename_prefix(
+            {"timestamp": "2026-09-08T21:34:40Z"}, 0
+        )
+        self.assertEqual(prefix, "20260908_213440")
+
+    def test_export_filename_prefix_falls_back_to_file_timestamp(self):
+        prefix = codex_md.session_start_filename_prefix({}, 0)
+        self.assertEqual(prefix, codex_md.datetime.fromtimestamp(0).strftime("%Y%m%d_%H%M%S"))
+
     def test_legacy_function_call_and_output(self):
         parser = self.parse([
             {"timestamp": "2026-06-01T00:00:00Z", "type": "response_item", "payload": {
