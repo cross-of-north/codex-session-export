@@ -268,6 +268,18 @@ def clean_filename(text: str) -> str:
     text = re.sub(r'[-\s]+', '-', text)
     return text[:60] if text else "untitled-session"
 
+def session_start_filename_prefix(metadata: Dict, fallback_timestamp: float) -> str:
+    """Return a filesystem-safe session-start timestamp for export filenames."""
+    timestamp = metadata.get('timestamp') if isinstance(metadata, dict) else None
+    if isinstance(timestamp, str):
+        try:
+            return datetime.fromisoformat(timestamp.replace('Z', '+00:00')).strftime("%Y%m%d_%H%M%S")
+        except ValueError:
+            pass
+    elif isinstance(timestamp, (int, float)):
+        return datetime.fromtimestamp(timestamp).strftime("%Y%m%d_%H%M%S")
+    return datetime.fromtimestamp(fallback_timestamp).strftime("%Y%m%d_%H%M%S")
+
 def trim_chat_content(content: str) -> str:
     content = content.replace('\r\n', '\n').replace('\r', '\n')
     content = re.sub(
@@ -2293,9 +2305,9 @@ def convert_files(valid_files: List[Path]):
                 internal_cap=internal_cap,
             )
 
-            date_prefix = datetime.fromtimestamp(
-                parser.filepath.stat().st_mtime
-            ).strftime("%Y%m%d")
+            date_prefix = session_start_filename_prefix(
+                parser.metadata, parser.filepath.stat().st_mtime
+            )
             safe_title = clean_filename(parser.title)
             out_filename = f"{date_prefix}_{safe_title}.md"
             line_count = md_content.count('\n') + 1
